@@ -66,19 +66,21 @@ def main(mode, tiny, iou_threshold, confidence_threshold, path):
             return
 
         cv2.namedWindow("Detections")
-        video = cv2.VideoCapture(path)
-        fourcc = int(video.get(cv2.CAP_PROP_FOURCC))
-        fps = video.get(cv2.CAP_PROP_FPS)
-        frame_size = (int(video.get(cv2.CAP_PROP_FRAME_WIDTH)),
-                      int(video.get(cv2.CAP_PROP_FRAME_HEIGHT)))
-        out = cv2.VideoWriter(
-            './detections/video_output.mp4', fourcc, fps, frame_size)
+        
+        
         print("Video being saved at \"" + './detections/video_output.mp4' + "\"")
         print("Press 'q' to quit")
-        while True:
-            retval, frame = video.read()
-            if not retval:
-                break
+        pathIn = './data/PETS_2000_Frames/'
+        files = [f for f in os.listdir(pathIn)]
+        files.sort(key= lambda x: int(x.split('.')[0].split('_')[1]))
+        frame=cv2.imread(pathIn+files[0])
+        frame_size = frame.shape[:2][::-1]
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        
+        out = cv2.VideoWriter(
+            './detections/video_output.mp4', fourcc, 20, frame_size)
+        for i in range(len(files)):
+            frame = cv2.imread(pathIn+files[i])
             resized_frame = cv2.resize(frame, dsize=tuple(
                 (x) for x in model.input_size[::-1]), interpolation=cv2.INTER_NEAREST)
             result = sess.run(detections, feed_dict={inputs: [resized_frame]})
@@ -89,8 +91,7 @@ def main(mode, tiny, iou_threshold, confidence_threshold, path):
             if type(frame) == type(None):
               break
 
-            frame = cv2.resize(frame, (int(video.get(cv2.CAP_PROP_FRAME_WIDTH)),
-                  int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))))
+            frame = cv2.resize(frame, frame_size)
             resultImage = frame
 
             frameCounter = frameCounter + 1
@@ -193,8 +194,6 @@ def main(mode, tiny, iou_threshold, confidence_threshold, path):
                 break
             out.write(resultImage)
         cv2.destroyAllWindows()
-        video.release()
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
